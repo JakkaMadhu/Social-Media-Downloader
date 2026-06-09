@@ -23,7 +23,6 @@ if /I "%_arg1%"=="-help" goto :help
 if /I "%_arg1%"=="-h" goto :help
 if /I "%_arg1%"=="/?" goto :help
 if /I "%_arg1%"=="/h" goto :help
-if "%_arg1%"=="" goto :help
 
 :: 2. Robust Setup Checks
 set "YTDLP_PATH="
@@ -34,6 +33,7 @@ if not defined YTDLP_PATH (
     ) else (
         echo !CLR_ERROR![Error] The core downloader tool [yt-dlp.exe] is missing.!CLR_RESET!
         echo Please make sure yt-dlp.exe is in the same folder as this script.
+        endlocal
         exit /b 1
     )
 )
@@ -93,6 +93,7 @@ if !errorlevel! neq 0 (
         echo !CLR_ERROR![Error] The helper tool [ffmpeg.exe] is missing.!CLR_RESET!
         echo Without it, high-quality video and audio cannot be combined.
         echo Please make sure ffmpeg.exe is in the same folder as this script.
+        endlocal
         exit /b 1
     )
 )
@@ -174,6 +175,7 @@ if not defined _youtube_url (
         echo.
         echo !CLR_ERROR![Notice] You forgot to paste the YouTube link.!CLR_RESET!
         echo Usage example: yt https://www.youtube.com/watch?v=...
+        endlocal
         exit /b 1
     )
 )
@@ -260,6 +262,7 @@ exit /b 0
 echo.
 echo !CLR_ERROR![Error] Unrecognized option: !_current_arg!!CLR_RESET!
 echo Please check the spelling or run "yt --help" for options.
+endlocal
 exit /b 1
 
 :help
@@ -291,4 +294,5 @@ echo   - It automatically downloads and embeds English subtitles [and auto-capti
 echo   - If you paste a Playlist link, it creates a folder named 
 echo     after the playlist and numbers all videos (01, 02, 03...).
 echo ====================================================================
+endlocal
 exit /b 0
