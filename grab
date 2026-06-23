@@ -1,0 +1,206 @@
+#!/bin/bash
+# =====================================================================
+# Script Name: grab
+# Description: Social Media Downloader - Fast, Colorful CLI Tool (Linux/macOS)
+# Usage:       ./grab <URL/Flag> [Custom_Output_Name]
+# =====================================================================
+
+# 1. Color Constants
+CLR_RESET="\033[0m"
+CLR_SUCCESS="\033[92m"
+CLR_ERROR="\033[91m"
+CLR_INFO="\033[96m"
+CLR_WARN="\033[93m"
+
+_arg1="$1"
+_arg2="$2"
+
+# Help Menu
+show_help() {
+    echo -e "${CLR_INFO}Social Media Downloader v1.0.0${CLR_RESET}"
+    echo ""
+    echo "Usage: grab [OPTIONS] <URL> [OUTPUT_NAME]"
+    echo ""
+    echo "Arguments:"
+    echo "  <URL>            The media link (YouTube, Instagram, Facebook, TikTok, etc.)"
+    echo "  [OUTPUT_NAME]    Optional custom filename for the downloaded file"
+    echo ""
+    echo "Options:"
+    echo "  -audio           Extract and download highest quality audio as MP3"
+    echo "  -nosub           Skip downloading and embedding subtitles"
+    echo "  -items RANGE     Download specific playlist items (e.g. 1-5, 1,3,5)"
+    echo "  -v, --version    Show program version details"
+    echo "  -h, --help       Show this help message and exit"
+    echo "  -u, --update     Check and update the core downloader engine"
+    echo ""
+    echo "Examples:"
+    echo "  grab \"https://www.youtube.com/watch?v=...\""
+    echo "  grab -audio \"https://instagram.com/reel/...\""
+    echo "  grab -items 1-5 \"https://www.youtube.com/playlist?list=...\" \"My Playlist\""
+    exit 0
+}
+
+if [[ "$_arg1" == "--help" || "$_arg1" == "-help" || "$_arg1" == "-h" ]]; then
+    show_help
+fi
+
+if [[ "$_arg1" == "--version" || "$_arg1" == "-version" || "$_arg1" == "-v" ]]; then
+    echo "Social Media Downloader v1.0.0"
+    exit 0
+fi
+
+# 2. Setup Checks
+# Check if yt-dlp is installed
+if ! command -v yt-dlp &> /dev/null; then
+    echo -e "${CLR_ERROR}[Error] The core downloader tool 'yt-dlp' is not installed.${CLR_RESET}"
+    echo "Please install it using your package manager. Examples:"
+    echo "  Ubuntu/Debian: sudo apt install yt-dlp"
+    echo "  Arch Linux:    sudo pacman -S yt-dlp"
+    echo "  macOS (Homebrew): brew install yt-dlp"
+    exit 1
+fi
+
+# Check if ffmpeg is installed
+if ! command -v ffmpeg &> /dev/null; then
+    echo -e "${CLR_ERROR}[Error] The helper tool 'ffmpeg' is not installed.${CLR_RESET}"
+    echo "Without it, high-quality video and audio cannot be combined."
+    echo "Please install it using your package manager. Examples:"
+    echo "  Ubuntu/Debian: sudo apt install ffmpeg"
+    echo "  Arch Linux:    sudo pacman -S ffmpeg"
+    echo "  macOS (Homebrew): brew install ffmpeg"
+    exit 1
+fi
+
+# Update feature
+if [[ "$_arg1" == "--update" || "$_arg1" == "-update" || "$_arg1" == "-u" ]]; then
+    echo -e "${CLR_INFO}[Update] Checking for updates... Please wait...${CLR_RESET}"
+    if yt-dlp -U; then
+        echo -e "${CLR_SUCCESS}[Success] Update check completed.${CLR_RESET}"
+        exit 0
+    else
+        echo -e "${CLR_ERROR}[Error] Update check failed. Try running with sudo if permissions are denied.${CLR_RESET}"
+        exit 1
+    fi
+fi
+
+# 3. Parse options
+_mode="video"
+_media_url=""
+_custom_name=""
+_disable_subs=0
+_playlist_range=""
+_playlist_flags=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -audio)
+            _mode="audio"
+            shift
+            ;;
+        -nosub|-nosubs)
+            _disable_subs=1
+            shift
+            ;;
+        -items)
+            _playlist_range="$2"
+            _playlist_flags="--playlist-items $_playlist_range"
+            shift 2
+            ;;
+        -*)
+            echo -e "${CLR_ERROR}[Error] Unrecognized option: $1${CLR_RESET}"
+            echo "Please run 'grab --help' for details."
+            exit 1
+            ;;
+        *)
+            if [[ -z "$_media_url" ]]; then
+                _media_url="$1"
+            elif [[ -z "$_custom_name" ]]; then
+                _custom_name="$1"
+            else
+                _custom_name="$_custom_name $1"
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Prompt for URL if not provided
+if [[ -z "$_media_url" ]]; then
+    echo -n "Please paste the media link (YouTube, Instagram, FB, TikTok, etc.): "
+    read -r _media_url
+    if [[ -z "$_media_url" ]]; then
+        echo ""
+        echo -e "${CLR_ERROR}[Notice] You forgot to paste the media link.${CLR_RESET}"
+        echo "Usage example: grab \"https://instagram.com/p/...\""
+        exit 1
+    fi
+fi
+
+# 4. Download Configurations
+_is_playlist=0
+if [[ "$_media_url" == *"list="* ]]; then
+    _is_playlist=1
+fi
+
+if [[ "$_is_playlist" -eq 1 ]]; then
+    echo -e "${CLR_WARN}[Playlist] Multiple videos detected! Creating a folder automatically...${CLR_RESET}"
+    if [[ -n "$_custom_name" ]]; then
+        _folder="$_custom_name"
+    else
+        _folder="%(playlist_title)s"
+    fi
+    _output_name="$_folder/%(playlist_index)s - %(title)s.%(ext)s"
+else
+    if [[ -n "$_custom_name" ]]; then
+        _output_name="$_custom_name.%(ext)s"
+    else
+        _output_name="%(title)s.%(ext)s"
+    fi
+fi
+
+_common_flags="--no-config --file-access-retries 10 -q --progress --no-warnings"
+
+if [[ "$_mode" == "audio" ]]; then
+    echo -e "${CLR_WARN}[Mode] Downloading as MP3 Audio [Music]...${CLR_RESET}"
+    _quality_flags="$_common_flags -x --audio-format mp3 --audio-quality 0 --embed-thumbnail"
+else
+    if [[ "$_disable_subs" -eq 1 ]]; then
+        echo -e "${CLR_SUCCESS}[Mode] Downloading highest quality video without subtitles...${CLR_RESET}"
+        _sub_flags=""
+    else
+        echo -e "${CLR_SUCCESS}[Mode] Downloading highest quality video with subtitles...${CLR_RESET}"
+        _sub_flags="--write-auto-subs --sub-langs en* --embed-subs"
+    fi
+    _quality_flags="$_common_flags -f bv+ba/b --merge-output-format mkv $_sub_flags"
+fi
+
+if [[ "$_is_playlist" -eq 0 ]]; then
+    _quality_flags="$_quality_flags --no-playlist"
+fi
+
+# 5. Execution Pipeline
+echo -e "${CLR_INFO}[Connection] Contacting media platform... Please wait...${CLR_RESET}"
+echo ""
+
+_err_log=$(mktemp)
+yt-dlp $_quality_flags $_playlist_flags -o "$_output_name" "$_media_url" 2> "$_err_log"
+_exit_code=$?
+
+if [[ $_exit_code -ne 0 ]]; then
+    if grep -Ei "confirm your age|private video|sign in|login" "$_err_log" > /dev/null; then
+        echo ""
+        echo -e "${CLR_ERROR}[Error] This video is restricted or private.${CLR_RESET}"
+        echo ""
+    else
+        cat "$_err_log"
+        echo ""
+        echo -e "${CLR_ERROR}[Error] Download failed. Please check your internet connection or the video link.${CLR_RESET}"
+    fi
+    rm -f "$_err_log"
+    exit $_exit_code
+fi
+
+rm -f "$_err_log"
+echo ""
+echo -e "${CLR_SUCCESS}[Success] Done! Your download is ready.${CLR_RESET}"
+exit 0

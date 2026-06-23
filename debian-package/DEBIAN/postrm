@@ -1,0 +1,21 @@
+#!/bin/sh
+# DEBIAN/postrm script for social-media-downloader
+set -e
+
+case "$1" in
+    purge|remove)
+        echo "=========================================================="
+        echo " Removing Social Media Downloader engine from system..."
+        rm -f /usr/local/bin/yt-dlp
+        echo " Cleanup completed."
+        echo "=========================================================="
+        ;;
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

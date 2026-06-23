@@ -1,0 +1,10 @@
+Package: social-media-downloader
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: all
+Depends: ffmpeg, wget, curl
+Maintainer: Jakka Madhu <jakka.madhu@example.com>
+Description: Social Media Downloader
+ A lightweight, clean CLI tool for downloading media from YouTube,
+ Instagram, Facebook, TikTok, Twitter/X, and 1,000+ other sites.
