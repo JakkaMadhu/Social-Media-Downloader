@@ -1,84 +1,154 @@
-# 🚀 YouTube Smart Downloader (`yt.bat`)
+<div align="center">
+  <h1>Social Media Downloader</h1>
+  <p><b>A modern, high-performance Windows CLI media downloader powered by yt-dlp & FFmpeg.</b></p>
+  <p>
+    <a href="https://github.com/JakkaMadhu/Social-Media-Downloader/releases">
+      <img src="https://img.shields.io/github/v/release/JakkaMadhu/Social-Media-Downloader?color=3b82f6&logo=github&style=for-the-badge" alt="Release">
+    </a>
+    <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows" alt="Platform">
+    <img src="https://img.shields.io/badge/License-MIT-10b981?style=for-the-badge" alt="License">
+    <a href="https://github.com/JakkaMadhu/Social-Media-Downloader/releases">
+      <img src="https://img.shields.io/github/downloads/JakkaMadhu/Social-Media-Downloader/total?color=f59e0b&style=for-the-badge" alt="Downloads">
+    </a>
+  </p>
 
-A fast, clean, and extremely robust Windows Command Prompt wrapper for `yt-dlp` and `ffmpeg`. It simplifies downloading YouTube videos, playlists, and audio tracks, featuring automated setups, auto-subtitles, file-lock resilience, and an interactive link prompt.
-
----
-
-## ✨ Features
-
-* **🧹 Clean Console UI:** Silences background extraction metadata logs. Shows only clean progress bars and simple error notices.
-* **📝 Automatic Subtitles:** Downloads and embeds English subtitles (`en*`) directly into your videos on the fly. No extra `.vtt` subtitle files left cluttering your folders.
-* **📂 Smart Playlists:** Automatically creates a folder named after the playlist and numbers all output files sequentially (e.g., `01 - Video Title.mkv`).
-* **🔒 Lock-File Resilience:** Automatically waits and retries rename/move operations up to 10 times to prevent errors from Windows Defender, OneDrive syncs, or Explorer file indexing.
-* **⚠️ Typo Protection:** Automatically intercepts misspelled or invalid option flags and outputs clean warnings instead of raising credential logins.
-* **⌨️ Interactive Mode:** Just run `yt` without arguments, and it will prompt you to paste the URL, completely bypassing Windows command splitting without requiring you to type double quotes.
-
----
-
-## ⚡ Quick Installation
-
-1. Download this repository (or copy [yt.bat](yt.bat) and [setup.bat](setup.bat) to a folder on your PC).
-2. Double-click **`setup.bat`**. 
-   * It will automatically install `yt-dlp` and `ffmpeg` globally using **Windows Package Manager (`winget`)**.
-   * If `winget` is not available, it will fall back to downloading `yt-dlp.exe` and `ffmpeg.exe` directly into your folder.
-3. *Optional:* Add this folder to your system **Path** environment variables so you can run `yt` from any folder on your computer.
+  <p><b>Download high-quality videos and audio tracks from YouTube, Instagram, Facebook, TikTok, Twitter/X, and 1,000+ sites using a single command: <code>grab</code>.</b></p>
+</div>
 
 ---
 
-## 📖 Usage Guide
+## Table of Contents
+- [Key Features](#key-features)
+- [Installation](#installation)
+  - [Recommended: One-Click Installer](#recommended-one-click-installer)
+  - [Manual (Portable) Installation](#manual-portable-installation)
+- [Usage & Commands](#usage--commands)
+  - [1. Download Video (Default)](#1-download-video-default)
+  - [2. Download Audio (MP3)](#2-download-audio-mp3)
+  - [3. Download Playlists](#3-download-playlists)
+  - [4. Custom Output Naming](#4-custom-output-naming)
+  - [5. Disable Subtitles](#5-disable-subtitles)
+  - [6. Keep Tool Updated](#6-keep-tool-updated)
+- [How It Works (Under the Hood)](#how-it-works-under-the-hood)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
 
-Open Command Prompt (CMD) and run these commands. 
+---
 
-> 💡 **Important:** When running a command directly, always wrap the link in **double quotes (`"..."`)** to prevent Windows from breaking the URL at `&` characters.
+## Key Features
 
-### 🎥 Download Video
-Downloads the highest quality video format and embeds English subtitles:
+| Feature | Description |
+| :--- | :--- |
+| **1000+ Websites Supported** | Works out-of-the-box with YouTube, Facebook, Instagram (Reels/Posts), TikTok, Twitter/X, Reddit, Twitch, Vimeo, and more. |
+| **Clean Console Output** | Filters out noisy background connection logs to display only clean progress percentages. |
+| **Automated Subtitles** | Downloads and embeds English subtitles (`en*`) directly into the final video file (`.mkv`) on the fly. |
+| **Smart Playlist Management** | Automatically groups playlist tracks into a sub-folder and sequences them numerically. |
+| **Lock-File Resilience** | Employs 10x auto-retries for rename/move actions, bypassing blocks from Windows Defender or OneDrive sync. |
+| **Interactive Paste Mode** | Simply run `grab` to paste links directly, avoiding command-prompt URL breaking without needing double quotes. |
+
+---
+
+## Installation
+
+### Recommended: One-Click Installer
+The easiest way to install and keep the downloader configured globally:
+1. Go to the [Releases](https://github.com/JakkaMadhu/Social-Media-Downloader/releases) section.
+2. Download **`SocialMediaDownloader-v1.0.0-Setup.exe`**.
+3. Run the installer. It will automatically:
+   * Install the script (`grab.bat`) and required core binaries (`yt-dlp.exe`, `ffmpeg.exe`, `ffprobe.exe`).
+   * Add the installation path to your **User PATH Environment Variable** so the command works anywhere.
+4. Launch a new Command Prompt window and type `grab` to start.
+
+---
+
+### Manual (Portable) Installation
+If you prefer running the script without installing:
+1. Download [grab.bat](grab.bat) from this repository.
+2. Download the Windows release of [yt-dlp](https://github.com/yt-dlp/yt-dlp) (`yt-dlp.exe`) and [FFmpeg](https://www.ffmpeg.org) essentials (`ffmpeg.exe`, `ffprobe.exe`) and place them in the same directory as `grab.bat`.
+3. Add that directory path to your system's Environment Variables under **Path** to run `grab` from any folder.
+
+---
+
+## Usage & Commands
+
+> [!IMPORTANT]
+> When executing commands directly in Command Prompt, always wrap your links in **double quotes (`"..."`)** to prevent Windows from breaking the URL at `&` characters.
+
+### 1. Download Video (Default)
+Downloads the highest resolution video streams and embeds auto-generated English subtitles:
 ```cmd
-yt "https://www.youtube.com/watch?v=yye7rSsiV6k"
+grab "https://www.youtube.com/watch?v=yye7rSsiV6k"
 ```
 
-### 🎵 Download Audio (MP3)
-Extracts and downloads highest-quality audio as a tagged MP3 track:
+### 2. Download Audio (MP3)
+Downloads, extracts, and tags the highest quality audio stream as a standalone MP3 file:
 ```cmd
-yt -audio "https://www.youtube.com/watch?v=yye7rSsiV6k"
+grab -audio "https://www.youtube.com/watch?v=yye7rSsiV6k"
 ```
 
-### 🎞️ Download Playlists
-Downloads the entire playlist, structures it inside a directory, and sequences files:
+### 3. Download Playlists
+Downloads all tracks in a playlist, creates a clean folder matching the playlist name, and numbers files sequentially:
 ```cmd
-yt "https://www.youtube.com/playlist?list=PL3oW2tjiIxvQ1H8jT2D36H-dgh3jX0a_k"
+grab "https://www.youtube.com/playlist?list=PL3oW2tjiIxvQ1H8jT2D36H..."
+```
+* **Download Specific Items:** Extract only specified ranges (e.g. tracks 1 to 5) or individual items:
+  ```cmd
+  grab -items 1-5 "https://www.youtube.com/playlist?list=..."
+  grab -items 1,3,5 "https://www.youtube.com/playlist?list=..."
+  ```
+
+### 4. Custom Output Naming
+Provide a custom name for the downloaded file (the extension will automatically match the profile format):
+```cmd
+grab "https://www.youtube.com/watch?v=yye7rSsiV6k" "My Holiday Video"
 ```
 
-### 🔢 Download Specific Playlist Items
-Downloads only a specific range, list, or step sequence of videos:
+### 5. Disable Subtitles
+Skip subtitle downloads and embed actions completely:
 ```cmd
-yt -items 1-5 "https://www.youtube.com/playlist?list=..."
-yt -items 1,3,5 "https://www.youtube.com/playlist?list=..."
-yt -items ::2 "https://www.youtube.com/playlist?list=..."
+grab -nosub "https://www.youtube.com/watch?v=yye7rSsiV6k"
 ```
 
-### 🚫 Download Without Subtitles
-Overrides the default auto-subtitle behavior:
+### 6. Keep Tool Updated
+Instantly checks and updates the core `yt-dlp` executable engine:
 ```cmd
-yt -nosub "https://www.youtube.com/watch?v=yye7rSsiV6k"
-```
-
-### 🔄 Update the Downloader
-Instantly updates `yt-dlp` to the latest release:
-```cmd
-yt -update
+grab --update
 ```
 
 ---
 
-## 🛠️ Advanced Tip: Interactive Paste (No Quotes!)
+## How It Works (Under the Hood)
 
-If you run the command by itself:
-```cmd
-yt
+The `grab` utility automates media extraction through a structured pipeline:
+
+```mermaid
+graph TD
+    A[User Inputs URL] --> B{Arguments Checked?}
+    B -->|Interactive Mode| C[Prompt user for paste]
+    B -->|Command Mode| D[Extract Modifiers -audio, -nosub]
+    C --> E[Verify FFMpeg & yt-dlp exist]
+    D --> E
+    E --> F[Run yt-dlp query to endpoint]
+    F --> G[Download High-Quality Streams]
+    G --> H[FFmpeg merge video/audio streams]
+    H --> I[Embed English subtitles & metadata]
+    I --> J[Validate file structure & save]
 ```
-The script will prompt you:
-```text
-Please paste the YouTube link:
-```
-Paste your link directly and hit Enter. Windows will not split the ampersand `&` characters in this mode, meaning **you do not need to wrap your link in double quotes!**
+
+---
+
+## Troubleshooting
+
+> [!TIP]
+> **Q: The command 'grab' is not recognized.**
+> Ensure you closed and restarted your Command Prompt window after installing. If it still fails, search for "Edit Environment Variables for your account" in Windows, double-click **Path**, and verify that the program directory is listed.
+
+> [!WARNING]
+> **Q: Download fails on restricted, private, or age-gated videos.**
+> Some media platforms require active accounts or browser credentials to verify access. Try using the public version of the links or ensure you are logged in.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for more details.

@@ -1,8 +1,8 @@
 @echo off
 rem =====================================================================
-rem Script Name: yt.bat
-rem Description: Fast, Colorful, Everyday-Friendly YouTube Downloader
-rem Usage:       yt.bat <URL/Flag> [Custom_Output_Name]
+rem Script Name: grab.bat
+rem Description: Social Media Downloader - Fast, Colorful CLI Tool
+rem Usage:       grab <URL/Flag> [Custom_Output_Name]
 rem =====================================================================
 setlocal enabledelayedexpansion
 
@@ -46,7 +46,7 @@ goto :skip_update
 
 :run_update
 echo !CLR_INFO![Update] Checking for updates... Please wait...!CLR_RESET!
-set "_update_log=%temp%\yt_upd_%random%.log"
+set "_update_log=%temp%\grab_upd_%random%.log"
 "!YTDLP_PATH!" --no-config -U > "%_update_log%" 2>&1
 set "_update_exit_code=!errorlevel!"
 
@@ -110,7 +110,7 @@ if "!_raw_args:~0,1!"=="""" (
 )
 
 set "_mode=video"
-set "_youtube_url="
+set "_media_url="
 set "_custom_name="
 set "_disable_subs=0"
 set "_playlist_flags="
@@ -152,8 +152,8 @@ if not "!_args_to_process!"=="" (
     if "!_first_char!"=="-" goto :bad_option
     if "!_first_char!"=="/" goto :bad_option
 
-    if not defined _youtube_url (
-        set "_youtube_url=!_current_arg!"
+    if not defined _media_url (
+        set "_media_url=!_current_arg!"
     ) else (
         if not defined _custom_name (
             set "_custom_name=!_current_arg!"
@@ -165,26 +165,26 @@ if not "!_args_to_process!"=="" (
 )
 
 :: Restore ampersands in variables
-if defined _youtube_url set "_youtube_url=!_youtube_url:_AMP_=&!"
+if defined _media_url set "_media_url=!_media_url:_AMP_=&!"
 if defined _custom_name set "_custom_name=!_custom_name:_AMP_=&!"
 
 :: Verify URL was provided
-if not defined _youtube_url (
-    set /p "_youtube_url=Please paste the YouTube link: "
-    if "!_youtube_url!"=="" (
+if not defined _media_url (
+    set /p "_media_url=Please paste the media link (YouTube, Instagram, FB, TikTok, etc.): "
+    if "!_media_url!"=="" (
         echo.
-        echo !CLR_ERROR![Notice] You forgot to paste the YouTube link.!CLR_RESET!
-        echo Usage example: yt https://www.youtube.com/watch?v=...
+        echo !CLR_ERROR![Notice] You forgot to paste the media link.!CLR_RESET!
+        echo Usage example: grab https://instagram.com/p/...
         endlocal
         exit /b 1
     )
 )
-set "_youtube_url=!_youtube_url:"=!"
+set "_media_url=!_media_url:"=!"
 
 :: 4. Core Download Configuration Profiles
 :: Determine playlist status
 set "_is_playlist=0"
-echo "!_youtube_url!" | findstr /I "list=" >nul
+echo "!_media_url!" | findstr /I "list=" >nul
 if !errorlevel! equ 0 set "_is_playlist=1"
 
 :: Build the output template path
@@ -222,12 +222,12 @@ if "!_is_playlist!"=="0" (
 )
 
 :: 5. Execution Pipeline
-echo !CLR_INFO![Connection] Contacting YouTube... Please wait...!CLR_RESET!
+echo !CLR_INFO![Connection] Contacting media platform... Please wait...!CLR_RESET!
 echo.
 
 :: Run yt-dlp, redirecting stderr to a temp file so we can catch authentication/age restriction errors
-set "_err_log=%temp%\yt_err_%random%.log"
-"!YTDLP_PATH!" !_quality_flags! !_playlist_flags! -o "!_output_name!" "!_youtube_url!" 2> "%_err_log%"
+set "_err_log=%temp%\grab_err_%random%.log"
+"!YTDLP_PATH!" !_quality_flags! !_playlist_flags! -o "!_output_name!" "!_media_url!" 2> "%_err_log%"
 set "_download_exit_code=!errorlevel!"
 
 if !_download_exit_code! neq 0 (
@@ -261,38 +261,40 @@ exit /b 0
 :bad_option
 echo.
 echo !CLR_ERROR![Error] Unrecognized option: !_current_arg!!CLR_RESET!
-echo Please check the spelling or run "yt --help" for options.
+echo Please check the spelling or run "grab --help" for options.
 endlocal
 exit /b 1
 
 :help
 echo !CLR_INFO!==================================================!CLR_RESET!
-echo !CLR_INFO!             YouTube Smart Downloader             !CLR_RESET!
+echo !CLR_INFO!             Social Media Downloader              !CLR_RESET!
 echo !CLR_INFO!==================================================!CLR_RESET!
 echo.
+echo Supported Platforms:
+echo   YouTube, Instagram, Facebook, TikTok, Twitter/X, and 1000+ sites!
+echo.
 echo Basic Video Download:
-echo   yt ^<Paste Link Here^>
+echo   grab ^<Paste Link Here^>
 echo.
 echo Download Video with a Specific Name:
-echo   yt ^<Paste Link^> "My Favorite Video"
+echo   grab ^<Paste Link^> "My Favorite Video"
 echo.
 echo Download as a Music Track (Audio Only):
-echo   yt -audio ^<Paste Link^>
+echo   grab -audio ^<Paste Link^>
 echo.
 echo Subtitle Options:
-echo   yt -nosub ^<Paste Link^>        Download video without subtitles.
+echo   grab -nosub ^<Paste Link^>        Download video without subtitles.
 echo.
 echo Playlist Options:
-echo   yt -items 1-5 ^<Paste Link^>    Download specific range of playlist items.
+echo   grab -items 1-5 ^<Paste Link^>    Download specific range of playlist items.
 echo.
 echo Update the Downloader Tool:
-echo   yt --update
+echo   grab --update
 echo.
 echo --------------------------------------------------------------------
-echo Extra Smart Features:
-echo   - It automatically downloads and embeds English subtitles [and auto-captions] by default.
-echo   - If you paste a Playlist link, it creates a folder named 
-echo     after the playlist and numbers all videos (01, 02, 03...).
+echo Features:
+echo   - Automatically downloads and embeds English subtitles and auto-captions.
+echo   - Auto-creates folders and orders items when downloading playlists.
 echo ====================================================================
 endlocal
 exit /b 0
