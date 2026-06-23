@@ -1,6 +1,6 @@
 <div align="center">
   <h1>Social Media Downloader</h1>
-  <p><b>A modern, high-performance Windows CLI media downloader powered by yt-dlp & FFmpeg.</b></p>
+  <p><b>A modern, high-performance Windows CLI media downloader.</b></p>
   <p>
     <a href="https://github.com/JakkaMadhu/Social-Media-Downloader/releases">
       <img src="https://img.shields.io/github/v/release/JakkaMadhu/Social-Media-Downloader?color=3b82f6&logo=github&style=for-the-badge" alt="Release">
@@ -55,7 +55,7 @@ The easiest way to install and keep the downloader configured globally:
 1. Go to the [Releases](https://github.com/JakkaMadhu/Social-Media-Downloader/releases) section.
 2. Download **`SocialMediaDownloader-v1.0.0-Setup.exe`**.
 3. Run the installer. It will automatically:
-   * Install the script (`grab.bat`) and required core binaries (`yt-dlp.exe`, `ffmpeg.exe`, `ffprobe.exe`).
+   * Install the script (`grab.bat`) and all necessary background utilities.
    * Add the installation path to your **User PATH Environment Variable** so the command works anywhere.
 4. Launch a new Command Prompt window and type `grab` to start.
 
@@ -64,7 +64,7 @@ The easiest way to install and keep the downloader configured globally:
 ### Manual (Portable) Installation
 If you prefer running the script without installing:
 1. Download [grab.bat](grab.bat) from this repository.
-2. Download the Windows release of [yt-dlp](https://github.com/yt-dlp/yt-dlp) (`yt-dlp.exe`) and [FFmpeg](https://www.ffmpeg.org) essentials (`ffmpeg.exe`, `ffprobe.exe`) and place them in the same directory as `grab.bat`.
+2. Ensure you have the core command-line downloader engine and media processing binaries in the same folder as `grab.bat`.
 3. Add that directory path to your system's Environment Variables under **Path** to run `grab` from any folder.
 
 ---
@@ -110,7 +110,7 @@ grab -nosub "https://www.youtube.com/watch?v=yye7rSsiV6k"
 ```
 
 ### 6. Keep Tool Updated
-Instantly checks and updates the core `yt-dlp` executable engine:
+Instantly checks and updates the core downloader engine:
 ```cmd
 grab --update
 ```
@@ -126,11 +126,11 @@ graph TD
     A[User Inputs URL] --> B{Arguments Checked?}
     B -->|Interactive Mode| C[Prompt user for paste]
     B -->|Command Mode| D[Extract Modifiers -audio, -nosub]
-    C --> E[Verify FFMpeg & yt-dlp exist]
+    C --> E[Verify background utilities exist]
     D --> E
-    E --> F[Run yt-dlp query to endpoint]
+    E --> F[Run query to media server]
     F --> G[Download High-Quality Streams]
-    G --> H[FFmpeg merge video/audio streams]
+    G --> H[Combine video and audio streams]
     H --> I[Embed English subtitles & metadata]
     I --> J[Validate file structure & save]
 ```
