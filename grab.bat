@@ -8,6 +8,7 @@ setlocal enabledelayedexpansion
 
 :: 1. Color and Environment Constants
 for /F %%a in ('echo prompt $E ^| cmd') do set "ESC=%%a"
+for /F %%a in ('copy /Z "%~f0" nul') do set "CR=%%a"
 set "CLR_RESET=!ESC![0m"
 set "CLR_SUCCESS=!ESC![92m"
 set "CLR_ERROR=!ESC![91m"
@@ -17,6 +18,36 @@ set "BANG=!"
 
 set "_arg1=%~1"
 set "_arg2=%~2"
+
+if defined _FIXED_CTRL_C goto :main
+
+:: If arguments are provided, launch recursively with STDIN redirected to NUL to bypass the "Terminate batch job" prompt
+if not "%_arg1%"=="" (
+    set "_FIXED_CTRL_C=1"
+    call <nul "%~f0" %*
+    exit /b !errorlevel!
+)
+
+:: Interactive mode: read input normally
+set /p "_media_url=Please paste the media link (YouTube, Instagram, FB, TikTok, etc.): "
+if "!_media_url!"=="" (
+    echo.
+    echo !CLR_ERROR![Notice] You forgot to paste the media link.!CLR_RESET!
+    echo Usage example: grab https://instagram.com/p/...
+    endlocal
+    exit /b 1
+)
+
+:: Clean quotes from pasted URL
+set "_media_url=!_media_url:"=!"
+set "_media_url=!_media_url:'=!"
+
+:: Run recursively with STDIN redirected to NUL to bypass the "Terminate batch job" prompt
+set "_FIXED_CTRL_C=1"
+call <nul "%~f0" "!_media_url!"
+exit /b !errorlevel!
+
+:main
 
 for %%H in (--help -help -h /? /h) do if /I "%_arg1%"=="%%H" goto :help
 for %%V in (--version -version -v) do if /I "%_arg1%"=="%%V" goto :version
@@ -122,20 +153,28 @@ if not "!_args_to_process!"=="" (
     rem Strip quotes from CURRENT_ARG
     set "_current_arg=!_current_arg:"=!"
     
-    if /I "!_current_arg!"=="-audio" (
+    set "_is_audio_arg=0"
+    if /I "!_current_arg!"=="-audio" set "_is_audio_arg=1"
+    if /I "!_current_arg!"=="--audio" set "_is_audio_arg=1"
+    if "!_is_audio_arg!"=="1" (
         set "_mode=audio"
         goto :parse_loop
     )
-    if /I "!_current_arg!"=="-nosub" (
-        set "_disable_subs=1"
-        goto :parse_loop
-    )
-    if /I "!_current_arg!"=="-nosubs" (
+
+    set "_is_nosub_arg=0"
+    if /I "!_current_arg!"=="-nosub" set "_is_nosub_arg=1"
+    if /I "!_current_arg!"=="--nosub" set "_is_nosub_arg=1"
+    if /I "!_current_arg!"=="-nosubs" set "_is_nosub_arg=1"
+    if /I "!_current_arg!"=="--nosubs" set "_is_nosub_arg=1"
+    if "!_is_nosub_arg!"=="1" (
         set "_disable_subs=1"
         goto :parse_loop
     )
 
-    if /I "!_current_arg!"=="-items" (
+    set "_is_items_arg=0"
+    if /I "!_current_arg!"=="-items" set "_is_items_arg=1"
+    if /I "!_current_arg!"=="--items" set "_is_items_arg=1"
+    if "!_is_items_arg!"=="1" (
         for /F "tokens=1* delims= " %%A in ("!_args_to_process!") do (
             set "_playlist_range=%%A"
             set "_args_to_process=%%B"
@@ -204,7 +243,7 @@ if !errorlevel! equ 0 set "_is_playlist=1"
 
 :: Build the output template path
 if "!_is_playlist!"=="1" (
-    echo !CLR_WARN![Playlist] Multiple videos detected! Creating a folder automatically...!CLR_RESET!
+    echo !CLR_WARN![Playlist] Downloading playlist...!CLR_RESET!
     set "_folder=%%(playlist_title)s"
     if not "!_custom_name!"=="" set "_folder=!_custom_name!"
     set "_output_name=!_folder!/%%(playlist_index)s - %%(title)s.%%(ext)s"
@@ -219,14 +258,14 @@ set "_common_flags=--no-config --file-access-retries 10 -q --progress --no-warni
 
 :: Set quality flags based on mode
 if "%_mode%"=="audio" (
-    echo !CLR_WARN![Mode] Downloading as MP3 Audio [Music]...!CLR_RESET!
+    echo !CLR_WARN![Audio] Downloading MP3 audio track...!CLR_RESET!
     set "_quality_flags=!_common_flags! -x --audio-format mp3 --audio-quality 0 --embed-thumbnail"
 ) else (
     if "!_disable_subs!"=="1" (
-        echo !CLR_SUCCESS![Mode] Downloading highest quality video without subtitles...!CLR_RESET!
+        echo !CLR_SUCCESS![Video] Downloading video...!CLR_RESET!
         set "_sub_flags="
     ) else (
-        echo !CLR_SUCCESS![Mode] Downloading highest quality video with subtitles...!CLR_RESET!
+        echo !CLR_SUCCESS![Video] Downloading video with English subtitles...!CLR_RESET!
         set "_sub_flags=--write-auto-subs --sub-langs "en*" --embed-subs"
     )
     set "_quality_flags=!_common_flags! -f "bv+ba/b" --merge-output-format mkv !_sub_flags!"
@@ -246,12 +285,35 @@ set "_err_log=%temp%\grab_err_%random%.log"
 "!YTDLP_PATH!" !_quality_flags! !_playlist_flags! -o "!_output_name!" "!_media_url!" 2> "%_err_log%"
 set "_download_exit_code=!errorlevel!"
 
+:: If download failed, check if it was due to subtitles and automatically retry without subtitles
+if !_download_exit_code! neq 0 (
+    if exist "%_err_log%" (
+        findstr /I /C:"Unable to download video subtitles" /C:"subtitle" "%_err_log%" >nul
+        if !errorlevel! equ 0 (
+            if "!_disable_subs!"=="0" (
+                echo !CLR_WARN![Notice] Subtitles unavailable. Retrying video only...!CLR_RESET!
+                echo.
+                
+                :: Clean up temp download folder before retrying
+                if exist "!_temp_dir!" rd /s /q "!_temp_dir!"
+                
+                :: Rebuild flags without subtitles
+                set "_quality_flags_nosub=!_common_flags! -f "bv+ba/b" --merge-output-format mkv"
+                if "!_is_playlist!"=="0" set "_quality_flags_nosub=!_quality_flags_nosub! --no-playlist"
+                
+                :: Run again
+                "!YTDLP_PATH!" !_quality_flags_nosub! !_playlist_flags! -o "!_output_name!" "!_media_url!" 2> "%_err_log%"
+                set "_download_exit_code=!errorlevel!"
+            )
+        )
+    )
+)
+
 :: Clean up temp download folder on exit
 if exist "!_temp_dir!" rd /s /q "!_temp_dir!"
 
 if !_download_exit_code! neq 0 (
     if exist "%_err_log%" (
-        rem Inspect the error for specific categories
         findstr /I /C:"confirm your age" /C:"private video" /C:"sign in" /C:"login" "%_err_log%" >nul
         set "_is_restricted=!errorlevel!"
         findstr /I /C:"Unsupported URL" "%_err_log%" >nul
@@ -260,27 +322,33 @@ if !_download_exit_code! neq 0 (
         set "_is_not_found=!errorlevel!"
         findstr /I /C:"empty media response" /C:"accessible in your browser" "%_err_log%" >nul
         set "_is_inaccessible=!errorlevel!"
+        findstr /I /C:"Interrupted by user" /C:"KeyboardInterrupt" "%_err_log%" >nul
+        set "_is_interrupted=!errorlevel!"
         
-        if !_is_restricted! equ 0 (
+        if !_is_interrupted! equ 0 (
+            echo.
+            echo !CLR_WARN![Notice] Download cancelled.!CLR_RESET!
+            echo.
+        ) else if !_is_restricted! equ 0 (
             echo.
             echo !CLR_ERROR![Error] This video is restricted or private.!CLR_RESET!
             echo.
         ) else if !_is_unsupported! equ 0 (
             echo.
-            echo !CLR_ERROR![Error] Unsupported URL. The link does not point to a downloadable video or audio track.!CLR_RESET!
+            echo !CLR_ERROR![Error] This link does not contain a downloadable video or audio track.!CLR_RESET!
             echo.
         ) else if !_is_not_found! equ 0 (
             echo.
-            echo !CLR_ERROR![Error] Media not found. The link is broken or the video has been deleted.!CLR_RESET!
+            echo !CLR_ERROR![Error] Video not found. The link may be broken or deleted.!CLR_RESET!
             echo.
         ) else if !_is_inaccessible! equ 0 (
             echo.
-            echo !CLR_ERROR![Error] The media is not accessible. The link may be broken, private, or restricted.!CLR_RESET!
+            echo !CLR_ERROR![Error] This video is not accessible. It may be restricted or private.!CLR_RESET!
             echo.
         ) else (
             type "%_err_log%"
             echo.
-            echo !CLR_ERROR![Error] Download failed. Please check your internet connection or the video link.!CLR_RESET!
+            echo !CLR_ERROR![Error] Download failed.!CLR_RESET!
         )
         del "%_err_log%" 2>nul
     ) else (
@@ -293,7 +361,7 @@ if !_download_exit_code! neq 0 (
 :download_complete
 if exist "%_err_log%" del "%_err_log%" 2>nul
 echo.
-echo !CLR_SUCCESS![Success] Done!BANG! Your download is ready.!CLR_RESET!
+echo !CLR_SUCCESS![Success] Download complete!!CLR_RESET!
 endlocal
 exit /b 0
 

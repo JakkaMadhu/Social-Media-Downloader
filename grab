@@ -91,15 +91,15 @@ _playlist_flags=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -audio)
+        -audio|--audio)
             _mode="audio"
             shift
             ;;
-        -nosub|-nosubs)
+        -nosub|-nosubs|--nosub|--nosubs)
             _disable_subs=1
             shift
             ;;
-        -items)
+        -items|--items)
             _playlist_range="$2"
             _playlist_flags="--playlist-items $_playlist_range"
             shift 2
@@ -163,7 +163,7 @@ if [[ "$_media_url" == *"list="* ]]; then
 fi
 
 if [[ "$_is_playlist" -eq 1 ]]; then
-    echo -e "${CLR_WARN}[Playlist] Multiple videos detected! Creating a folder automatically...${CLR_RESET}"
+    echo -e "${CLR_WARN}[Playlist] Downloading playlist...${CLR_RESET}"
     if [[ -n "$_custom_name" ]]; then
         _folder="$_custom_name"
     else
@@ -182,14 +182,14 @@ _temp_dir=".grab_temp_$$"
 _common_flags="--no-config --file-access-retries 10 -q --progress --no-warnings -P temp:$_temp_dir"
 
 if [[ "$_mode" == "audio" ]]; then
-    echo -e "${CLR_WARN}[Mode] Downloading as MP3 Audio [Music]...${CLR_RESET}"
+    echo -e "${CLR_WARN}[Audio] Downloading MP3 audio track...${CLR_RESET}"
     _quality_flags="$_common_flags -x --audio-format mp3 --audio-quality 0 --embed-thumbnail"
 else
     if [[ "$_disable_subs" -eq 1 ]]; then
-        echo -e "${CLR_SUCCESS}[Mode] Downloading highest quality video without subtitles...${CLR_RESET}"
+        echo -e "${CLR_SUCCESS}[Video] Downloading video...${CLR_RESET}"
         _sub_flags=""
     else
-        echo -e "${CLR_SUCCESS}[Mode] Downloading highest quality video with subtitles...${CLR_RESET}"
+        echo -e "${CLR_SUCCESS}[Video] Downloading video with English subtitles...${CLR_RESET}"
         _sub_flags="--write-auto-subs --sub-langs en* --embed-subs"
     fi
     _quality_flags="$_common_flags -f bv+ba/b --merge-output-format mkv $_sub_flags"
@@ -207,30 +207,57 @@ _err_log=$(mktemp)
 yt-dlp $_quality_flags $_playlist_flags -o "$_output_name" "$_media_url" 2> "$_err_log"
 _exit_code=$?
 
+if [[ $_exit_code -ne 0 ]]; then
+    # Check if failure was due to subtitles
+    if grep -Ei "Unable to download video subtitles|subtitle" "$_err_log" > /dev/null; then
+        if [[ "$_disable_subs" -eq 0 ]]; then
+            echo -e "${CLR_WARN}[Notice] Subtitles unavailable. Retrying video only...${CLR_RESET}"
+            echo ""
+            
+            # Clean up temp dir before retrying
+            rm -rf "$_temp_dir"
+            
+            # Rebuild flags without subtitles
+            _quality_flags_nosub="$_common_flags -f bv+ba/b --merge-output-format mkv"
+            if [[ "$_is_playlist" -eq 0 ]]; then
+                _quality_flags_nosub="$_quality_flags_nosub --no-playlist"
+            fi
+            
+            # Run again
+            yt-dlp $_quality_flags_nosub $_playlist_flags -o "$_output_name" "$_media_url" 2> "$_err_log"
+            _exit_code=$?
+        fi
+    fi
+fi
+
 # Clean up temp download folder on exit
 rm -rf "$_temp_dir"
 
 if [[ $_exit_code -ne 0 ]]; then
-    if grep -Ei "confirm your age|private video|sign in|login" "$_err_log" > /dev/null; then
+    if grep -Ei "Interrupted by user|KeyboardInterrupt" "$_err_log" > /dev/null; then
+        echo ""
+        echo -e "${CLR_WARN}[Notice] Download cancelled.${CLR_RESET}"
+        echo ""
+    elif grep -Ei "confirm your age|private video|sign in|login" "$_err_log" > /dev/null; then
         echo ""
         echo -e "${CLR_ERROR}[Error] This video is restricted or private.${CLR_RESET}"
         echo ""
     elif grep -Ei "Unsupported URL" "$_err_log" > /dev/null; then
         echo ""
-        echo -e "${CLR_ERROR}[Error] Unsupported URL. The link does not point to a downloadable video or audio track.${CLR_RESET}"
+        echo -e "${CLR_ERROR}[Error] This link does not contain a downloadable video or audio track.${CLR_RESET}"
         echo ""
     elif grep -Ei "not found|404|does not exist" "$_err_log" > /dev/null; then
         echo ""
-        echo -e "${CLR_ERROR}[Error] Media not found. The link is broken or the video has been deleted.${CLR_RESET}"
+        echo -e "${CLR_ERROR}[Error] Video not found. The link may be broken or deleted.${CLR_RESET}"
         echo ""
     elif grep -Ei "empty media response|accessible in your browser" "$_err_log" > /dev/null; then
         echo ""
-        echo -e "${CLR_ERROR}[Error] The media is not accessible. The link may be broken, private, or restricted.${CLR_RESET}"
+        echo -e "${CLR_ERROR}[Error] This video is not accessible. It may be restricted or private.${CLR_RESET}"
         echo ""
     else
         cat "$_err_log"
         echo ""
-        echo -e "${CLR_ERROR}[Error] Download failed. Please check your internet connection or the video link.${CLR_RESET}"
+        echo -e "${CLR_ERROR}[Error] Download failed.${CLR_RESET}"
     fi
     rm -f "$_err_log"
     exit $_exit_code
@@ -238,5 +265,5 @@ fi
 
 rm -f "$_err_log"
 echo ""
-echo -e "${CLR_SUCCESS}[Success] Done! Your download is ready.${CLR_RESET}"
+echo -e "${CLR_SUCCESS}[Success] Download complete!${CLR_RESET}"
 exit 0
