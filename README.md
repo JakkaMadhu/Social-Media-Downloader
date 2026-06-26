@@ -3,7 +3,7 @@
   <p><b>A lightweight, high-performance command-line utility for Windows and Linux.</b></p>
   <p>
     <a href="https://github.com/JakkaMadhu/Social-Media-Downloader/releases">
-      <img src="https://img.shields.io/github/v/release/JakkaMadhu/Social-Media-Downloader?color=3b82f6&logo=github&style=for-the-badge" alt="Release">
+      <img src="https://img.shields.io/github/v/tag/JakkaMadhu/Social-Media-Downloader?color=3b82f6&logo=github&style=for-the-badge" alt="Release">
     </a>
     <a href="#installation">
       <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-0078D6?style=for-the-badge" alt="Platform">
