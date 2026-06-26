@@ -184,6 +184,25 @@ if not defined _media_url (
     )
 )
 set "_media_url=!_media_url:"=!"
+set "_media_url=!_media_url:'=!"
+
+set "_valid_url=0"
+if /I "!_media_url:~0,7!"=="http://" set "_valid_url=1"
+if /I "!_media_url:~0,8!"=="https://" set "_valid_url=1"
+if /I "!_media_url:~0,4!"=="www." set "_valid_url=1"
+
+if "!_valid_url!"=="1" (
+    echo !_media_url! | findstr /R /I "\.[a-z0-9]" >nul
+    if !errorlevel! neq 0 set "_valid_url=0"
+)
+
+if "!_valid_url!"=="0" (
+    echo.
+    echo !CLR_ERROR![Error] Invalid URL: "!_media_url!"!CLR_RESET!
+    echo Please enter a valid media link
+    endlocal
+    exit /b 1
+)
 
 :: 4. Core Download Configuration Profiles
 :: Determine playlist status
@@ -203,7 +222,8 @@ if "!_is_playlist!"=="1" (
 )
 
 :: Set core common yt-dlp flags to avoid duplication
-set "_common_flags=--no-config --file-access-retries 10 -q --progress --no-warnings !FFMPEG_FLAGS!"
+set "_temp_dir=.grab_temp_%random%"
+set "_common_flags=--no-config --file-access-retries 10 -q --progress --no-warnings !FFMPEG_FLAGS! -P temp:!_temp_dir!"
 
 :: Set quality flags based on mode
 if "%_mode%"=="audio" (
@@ -234,13 +254,36 @@ set "_err_log=%temp%\grab_err_%random%.log"
 "!YTDLP_PATH!" !_quality_flags! !_playlist_flags! -o "!_output_name!" "!_media_url!" 2> "%_err_log%"
 set "_download_exit_code=!errorlevel!"
 
+:: Clean up temp download folder on exit
+if exist "!_temp_dir!" rd /s /q "!_temp_dir!"
+
 if !_download_exit_code! neq 0 (
     if exist "%_err_log%" (
-        rem Inspect the error for common age-restricted / private video indicators
+        rem Inspect the error for specific categories
         findstr /I /C:"confirm your age" /C:"private video" /C:"sign in" /C:"login" "%_err_log%" >nul
-        if !errorlevel! equ 0 (
+        set "_is_restricted=!errorlevel!"
+        findstr /I /C:"Unsupported URL" "%_err_log%" >nul
+        set "_is_unsupported=!errorlevel!"
+        findstr /I /C:"not found" /C:"404" /C:"does not exist" "%_err_log%" >nul
+        set "_is_not_found=!errorlevel!"
+        findstr /I /C:"empty media response" /C:"accessible in your browser" "%_err_log%" >nul
+        set "_is_inaccessible=!errorlevel!"
+        
+        if !_is_restricted! equ 0 (
             echo.
             echo !CLR_ERROR![Error] This video is restricted or private.!CLR_RESET!
+            echo.
+        ) else if !_is_unsupported! equ 0 (
+            echo.
+            echo !CLR_ERROR![Error] Unsupported URL. The link does not point to a downloadable video or audio track.!CLR_RESET!
+            echo.
+        ) else if !_is_not_found! equ 0 (
+            echo.
+            echo !CLR_ERROR![Error] Media not found. The link is broken or the video has been deleted.!CLR_RESET!
+            echo.
+        ) else if !_is_inaccessible! equ 0 (
+            echo.
+            echo !CLR_ERROR![Error] The media is not accessible. The link may be broken, private, or restricted.!CLR_RESET!
             echo.
         ) else (
             type "%_err_log%"

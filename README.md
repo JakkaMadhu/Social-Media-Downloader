@@ -17,19 +17,19 @@
   </p>
 
   <p>Download high-quality videos and audio tracks from YouTube, Instagram, Facebook, TikTok, Twitter/X, and 1,000+ sites using a single command: <code>grab</code>.</p>
-  <p><b>Direct Downloads:</b> <a href="https://github.com/JakkaMadhu/Social-Media-Downloader/releases/download/v1.0.0/SocialMediaDownloader-v1.0.0-Setup.exe">Windows Installer (.exe)</a> | <a href="https://github.com/JakkaMadhu/Social-Media-Downloader/releases/download/v1.0.0/social-media-downloader_1.0.0_ubuntu_all.deb">Linux Package (.deb)</a></p>
+  <p><b>Direct Downloads:</b> <a href="https://github.com/JakkaMadhu/Social-Media-Downloader/releases">Windows Installer (.exe)</a> | <a href="https://github.com/JakkaMadhu/Social-Media-Downloader/releases">Linux Package (.deb)</a></p>
 </div>
 
 ---
 
 ## Why Social Media Downloader?
 
-Most command-line media downloaders require memorizing long, complex option flags, leave temporary subtitle files cluttering your folders, and require manual environment PATH setup. 
+Most command-line media downloaders require memorizing long, complex option flags, leave temporary subtitle or fragment files cluttering your folders, and require manual environment PATH setup. 
 
 Social Media Downloader solves these problems by providing:
 * **Pre-configured settings:** Downloads the highest resolution, merges video/audio, and embeds subtitles automatically on the fly.
 * **Automatic PATH setup:** The native installers (`.exe` for Windows, `.deb` for Linux) configure your system environment instantly so you can type `grab` from any directory.
-* **Smart automation:** Automatically detects playlist links and structures downloads into ordered folders.
+* **Zero-Leak Cleanup:** If a download is canceled or fails, all temporary files and `.part` files are automatically deleted, leaving your download folder 100% clean.
 
 ---
 
@@ -37,47 +37,43 @@ Social Media Downloader solves these problems by providing:
 - [Key Features](#key-features)
 - [Installation](#installation)
 - [Usage & Commands](#usage--commands)
-- [Troubleshooting](#troubleshooting)
-- [Developer Resources](#developer-resources)
+- [Troubleshooting & Smart Errors](#troubleshooting--smart-errors)
+- [Developer Resources & Packaging Guide](#developer-resources--packaging-guide)
 - [License](#license)
 
 ---
 
 ## Key Features
 
-### Smart Automation
+### Smart Automation & Formatting
+* **Strict URL Input Validation**: Validates URLs locally to catch typos or incomplete formats (e.g. `https://www.`) before executing network requests.
+* **Smart Error Parsing**: Distinguishes between network failures, private/restricted links, unsupported homepages (e.g. `instagram.com`), and broken/deleted IDs (e.g. truncated reel links) to print helpful, non-technical warnings.
+* **Isolated Temporary Directory**: Active downloads are processed in a hidden, process-unique temporary directory (`.grab_temp_*`) to avoid workspace clutter and prevent multi-download collisions.
 * **Automatic Subtitle Embedding:** Downloads and embeds English subtitles directly inside the video container (`.mkv`) on the fly, keeping your folders clean.
 * **Sequential Playlist Management:** Automatically detects playlist URLs, creates a sub-folder matching the playlist title, and numbers all tracks sequentially (e.g. `01 - Video Title.mkv`).
-* **Lock-File Resilience:** Prevents write collisions from Windows Defender or active file-indexing sync services using a 10x smart retry mechanism.
 
 ### Clean User Experience
-* **Minimalist Console UI:** Filters out confusing network logs to show only clean progress percentages in the terminal.
-* **Interactive Paste Mode:** Run `grab` by itself to be prompted for a link. This avoids command-prompt URL splitting without requiring you to type double quotes.
-* **Platform Agnostic:** Identical feature sets and syntax on both Windows and Linux terminals.
+* **Minimalist Console UI:** Real-time progress percentages and speeds are printed smoothly in the terminal while technical network retry tracebacks are silenced.
+* **Interactive Mode**: Run `grab` by itself to be prompted for a link. Enclosing quotes are automatically stripped from pasted text to prevent shell parsing errors.
+* **Platform Agnostic**: Identical feature sets, CLI behaviors, and syntax on both Windows and Linux terminals.
 
 ---
 
 <a id="installation"></a>
 ## Installation
 
-<a id="windows-setup"></a>
 ### Windows Setup
-Download and run the installer:
-1. Download **[SocialMediaDownloader-v1.0.0-Setup.exe](https://github.com/JakkaMadhu/Social-Media-Downloader/releases/download/v1.0.0/SocialMediaDownloader-v1.0.0-Setup.exe)** directly, or visit the [Releases](https://github.com/JakkaMadhu/Social-Media-Downloader/releases) section.
-2. The installation wizard will install the utility to your program files and configure your system PATH.
+1. Go to the [Releases](https://github.com/JakkaMadhu/Social-Media-Downloader/releases) section and download the latest `SocialMediaDownloader-v1.0.0-windows-x64-Setup.exe` installer.
+2. Run the installer. The wizard will install the utility and configure your system environment `Path` registry keys automatically.
 3. Open a new Command Prompt or PowerShell window and run the `grab` command.
 
----
-
-<a id="linux-setup"></a>
 ### Linux (Ubuntu/Debian) Setup
-Download the native package and install it using the system package manager:
-1. Download **[social-media-downloader_1.0.0_ubuntu_all.deb](https://github.com/JakkaMadhu/Social-Media-Downloader/releases/download/v1.0.0/social-media-downloader_1.0.0_ubuntu_all.deb)** directly, or visit the [Releases](https://github.com/JakkaMadhu/Social-Media-Downloader/releases) section.
-2. In your terminal, run:
+1. Go to the [Releases](https://github.com/JakkaMadhu/Social-Media-Downloader/releases) section and download the native `.deb` package.
+2. In your terminal, install it using `apt` (this automatically configures dependencies like `ffmpeg`):
    ```bash
    sudo apt install ./social-media-downloader_1.0.0_ubuntu_all.deb
    ```
-3. This installs the command and configures all background dependencies automatically.
+3. Type `grab` from any directory.
 
 ---
 
@@ -132,31 +128,60 @@ grab --update
 ```
 
 > [!IMPORTANT]
-> Because the application is installed in system-protected folders (`C:\Program Files\` on Windows or `/usr/local/bin/` on Linux), you must run your Command Prompt/PowerShell as **Administrator** on Windows, or run `sudo grab --update` on Linux, to have the correct write permissions to download and overwrite the downloader engine.
+> Because the application is installed in system-protected folders (`C:\Program Files\` on Windows or `/usr/bin/` on Linux), you must run your Command Prompt/PowerShell as **Administrator** on Windows, or run `sudo grab --update` on Linux, to have the correct write permissions to download and overwrite the downloader engine.
 
 ---
 
-## Troubleshooting
+## Troubleshooting & Smart Errors
 
 > [!TIP]
 > **Q: The command 'grab' is not recognized.**
 > Make sure to open a new Command Prompt, PowerShell, or Terminal window after running the installer. If it still fails, check your environment PATH variables to ensure the installation bin directory is listed.
 
 > [!WARNING]
-> **Q: Download fails on restricted, private, or age-gated videos.**
-> Private or restricted videos require authentication to access. Ensure the link you are pasting is publicly viewable.
+> **Q: What do the specific error messages mean?**
+> * **`[Error] Invalid URL`**: The text entered does not follow a valid URL format or has an incomplete domain.
+> * **`[Error] This video is restricted or private`**: The link is age-gated or requires account login to view.
+> * **`[Error] Unsupported URL`**: The link is a valid webpage (like a homepage) but does not contain a downloadable video or audio track.
+> * **`[Error] Media not found`**: The link is broken or the video has been deleted.
+> * **`[Error] The media is not accessible`**: Instagram or the platform requires authentication or block anonymous downloads.
 
 ---
 
-## Developer Resources
+## Developer Resources & Packaging Guide
 
-Looking to build the installers from source? Check out the configurations:
-* **Windows Installer:** [Inno Setup Configuration](windows-installer/installer.iss)
-* **Linux Installer:** [Debian Package Configuration](debian-package/DEBIAN/control)
+If you wish to modify the code or build the installers from source, follow this guide.
+
+### Prerequisites
+The repository utilizes `yt-dlp` and `ffmpeg` as backends.
+* **Windows**: Download the latest `yt-dlp.exe` and static `ffmpeg.exe` / `ffprobe.exe` binaries and place them directly in the `windows-installer/` directory.
+* **Linux**: Install packaging tools:
+  ```bash
+  sudo apt install dpkg-dev
+  ```
+
+### 1. Building the Windows Installer (.exe)
+We use **Inno Setup** to compile the Windows `.exe` setup file:
+1. Download and install **[Inno Setup Compiler](https://jrsoftware.org/isdl.php)**.
+2. Open Inno Setup and load the script [windows-installer/installer.iss](windows-installer/installer.iss).
+3. Click **Build -> Compile** (or press `Ctrl + F9`).
+4. The setup executable will be generated inside the `windows-installer/Output/` directory.
+
+### 2. Building the Linux Package (.deb)
+To build the `.deb` package on a Debian/Ubuntu system, run the following commands in your terminal:
+```bash
+# 1. Set strict Debian file permissions
+chmod -R 755 debian-package
+chmod 755 debian-package/DEBIAN/postinst
+chmod 755 debian-package/DEBIAN/postrm
+chmod 755 debian-package/usr/local/bin/grab
+
+# 2. Build the package
+dpkg-deb --build debian-package social-media-downloader_1.0.0_ubuntu_all.deb
+```
 
 ---
 
-<a id="license"></a>
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

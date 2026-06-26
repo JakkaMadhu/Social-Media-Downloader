@@ -1,3 +1,15 @@
+# Pre-compiled Executables and Packages
 *.exe
 *.deb
+*.pkg
+*.dmg
+
+# Build Output Directories
 Output/
+windows-installer/Output/
+
+# Development / Temporary Files
+.grab_temp*
+*.part
+*.ytdl
+*.log
